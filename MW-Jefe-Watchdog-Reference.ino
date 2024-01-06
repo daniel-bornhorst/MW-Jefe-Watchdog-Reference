@@ -1,5 +1,4 @@
 
-/********************************************************************************************************************************/
 /****************************************** Jefe / Show Control Header Code *****************************************************/
 /********************************************************************************************************************************/
 
@@ -37,18 +36,107 @@ Autonet autonet(my_ip, my_mac, my_name, ddns, subnet, jefe_ip, jefe_port, jefe_i
 EthernetUDP Udp;
 int is_connected = 1;               // 0 = broken connection, 1 = connected. Not required, but can be handy
 
-/********************************************************************************************************************************/
+
 /******************************************** End Jefe / Show Control Code ******************************************************/
 /********************************************************************************************************************************/
 
 
-
 void setup() {
-  // put your setup code here, to run once:
+
+  Serial.begin(9600);
+  delay(500);
+  
+  // Do Stuff Blah Blah
+
+  /************** Network Setup Code *******************/
+  // Non of this should need to be changed
+  Ethernet.begin(my_mac, my_ip, ddns, gateway, subnet);
+  Udp.begin(my_localPort);
+  autonet.setup(Udp);
+  /****************************************************/
+
+
+  // Do Stuff Blah Blah
+
+
+  /*============= Hardware Watchdog code ==============*/
+  wdt_disable();        /* Disable the watchdog and wait for more than 2 seconds */
+  delay(3000);          /* Done so that the Arduino doesn't keep resetting infinitely in case of wrong configuration */
+  wdt_enable(WDTO_2S);  /* Enable the watchdog with a timeout of 2 seconds */
+  /*===================================================*/
+
+  // Do Stuff Blah Blah
 
 }
 
-void loop() {
-  // put your main code here, to run repeatedly:
 
+void loop() {
+  /************** Network Loop Code *******************/
+  autonet.loop();         // Pat the show manager. If this is not called the hearbeat will not be sent.
+  checkForOSCMessage();   // Call this to check for received OSC messages
+  /****************************************************/
+
+
+  // Example code: Sending anything over Serial will cause a reboot
+  if (Serial.available()) {
+    Serial.println("Reboot");
+    sendOSCMessage(0);
+    delay(500);
+    rebootExamples();
+    Serial.println("reboot done");    // This line should never print if reboot was successful
+  }  
+}
+
+// Example: How to send custom OSC messages
+// outMsg("/doorbell") replace /doorbell with your OSC address string
+// outMsg.add(....) replace .... with OSC variable. This line can be omitted if no variable needed
+void sendOSCMessage(int doorbell){
+  OSCMessage outMsg("/doorbell");
+  outMsg.add(doorbell);
+  is_connected = autonet.sendOSC(&outMsg, remote_ip, remote_port);
+}
+
+
+// Example: How to check for incomming OSC Messages
+void checkForOSCMessage() {
+  OSCMessage msgIn;
+  int s;
+  if( (s = autonet.Udp->parsePacket() ) > 0) {
+    Serial.println("got message!");
+    
+    while(s--) {
+      msgIn.fill(autonet.Udp->read());
+    }
+    
+    if(!msgIn.hasError()) {
+      // OSC Command response functions
+      // You can add as many callbacks here as you want
+      msgIn.route("/reboot", rebootCallback);
+      msgIn.route("/halt", haltCallback);
+    }
+    else {
+      Serial.println("[OSC ERROR] --- MSG_HAS_ERROR");
+    }
+  }
+}
+
+
+void rebootCallback(OSCMessage &msg, int addrOffset ) {
+  Serial.println("Reboot command received");
+  autonet.echo(&msg);
+  while(1) {}
+}
+
+
+void haltCallback(OSCMessage &msg, int addrOffset ) {
+  Serial.println("Halt! command received");
+  autonet.echo(&msg);
+  while(1) {}
+}
+
+
+void rebootExamples() {
+#if defined(__MK20DX128__) || defined(__MK20DX256__) || defined(__MK64FX512__) || defined(__MK66FX1M0__) || defined(__IMXRT1062__)
+  SCB_AIRCR = 0x05FA0004; // this reboot command only works on TEENSY
+#endif
 }
