@@ -6,6 +6,7 @@
 #include "autonet.h" // It must be included
 
 // MY network settings
+// ALWAYS EDIT
 IPAddress my_ip(10,32,16,33);                                 // Arduino/Teensy IP. Must be unique
 byte my_mac[] = {0x56, 0x5A, 0x69, 0x66, 0x66, 0x61};         // Arduino/Teebsy. Must be uniqe. https://miniwebtool.com/mac-address-generator/
 char my_name[50] = "9c710fdc-70cf-405f-8363-dd71efbfea3c";    // Unique ID for each device. generate here https://www.uuidgenerator.net/version4
@@ -13,6 +14,7 @@ const unsigned int  my_localPort = 6667;                      // Can be set in J
 
 
 // Network settings for Jefe Show controller and redudant core (QSys Core 101 and 104)
+// SOMETIMES EDIT
 IPAddress jefe_ip(10, 32, 16, 10);          // Primary Core
 // IPAddress jefe_ip2(10, 32, 16, 13);      // Redundant Core
 IPAddress jefe_ip2(10, 32, 16, 14);         // Test Core
@@ -20,13 +22,14 @@ const unsigned int jefe_port = 6666;        // Jefe Port
 
 
 // Stuff we need if we're not on 10.32.16.*
-// This should not need to be changed.
+// NEVER EDIT
 byte ddns[] =     {10, 32, 16, 1};
 byte *gateway =   ddns;
 byte subnet[] =   {255, 255, 240, 0};
 
 
 // Network settings for OSC messages. Typically Mac Mini Media Server (or OSC destination)
+// ALWAYS EDIT
 IPAddress remote_ip(10, 32, 16, 102);    // Audio recieving IP
 const unsigned int remote_port = 6543;   // receiving port 
 
