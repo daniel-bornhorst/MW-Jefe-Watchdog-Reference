@@ -60,6 +60,7 @@ void setup() {
 
 
   /*============= Hardware Watchdog code ==============*/
+  // This watchdog is currently for Arudio hardware only
   wdt_disable();        /* Disable the watchdog and wait for more than 2 seconds */
   delay(3000);          /* Done so that the Arduino doesn't keep resetting infinitely in case of wrong configuration */
   wdt_enable(WDTO_2S);  /* Enable the watchdog with a timeout of 2 seconds */
@@ -82,7 +83,7 @@ void loop() {
     Serial.println("Reboot");
     sendOSCMessage(0);
     delay(500);
-    rebootExamples();
+    reboot();
     Serial.println("reboot done");    // This line should never print if reboot was successful
   }  
 }
@@ -124,18 +125,29 @@ void checkForOSCMessage() {
 void rebootCallback(OSCMessage &msg, int addrOffset ) {
   Serial.println("Reboot command received");
   autonet.echo(&msg);
-  while(1) {}
+  reboot();
+  //while(1) {}
 }
 
 
 void haltCallback(OSCMessage &msg, int addrOffset ) {
   Serial.println("Halt! command received");
   autonet.echo(&msg);
-  while(1) {}
+  reboot();
+  //while(1) {}
 }
 
 
-void rebootExamples() {
+void reboot() {
+// Check for Teensy Hardware at compile time
+#if defined(__MK20DX128__) || defined(__MK20DX256__) || defined(__MK64FX512__) || defined(__MK66FX1M0__) || defined(__IMXRT1062__)
+  rebootTeensy();
+#endif
+}
+
+
+void rebootTeensy() {
+// Check for Teensy Hardware at compile time
 #if defined(__MK20DX128__) || defined(__MK20DX256__) || defined(__MK64FX512__) || defined(__MK66FX1M0__) || defined(__IMXRT1062__)
   SCB_AIRCR = 0x05FA0004; // this reboot command only works on TEENSY
 #endif
