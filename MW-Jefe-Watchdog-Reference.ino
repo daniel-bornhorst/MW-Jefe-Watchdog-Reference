@@ -3,7 +3,10 @@
 /********************************************************************************************************************************/
 
 // Autonet will automatically handle sending heartbeat to Jefe as well as safely sending all OSC messages.
-#include "autonet.h" // It must be included
+#include "autonet.h"    // It must be included, https://github.com/MeowWolf/MWArduino
+#include <Watchdog.h>   // Watchdog by Peter Polidoro. Can be found in the Arduino Library Manager or https://github.com/janelia-arduino/Watchdog
+
+Watchdog watchdog;
 
 // MY network settings
 // ALWAYS EDIT
@@ -63,13 +66,12 @@ void setup() {
 
 
   /*============= Hardware Watchdog code ==============*/
-  // This watchdog is currently for Arudio hardware only
-  wdt_disable();        /* Disable the watchdog and wait for more than 2 seconds */
-  delay(3000);          /* Done so that the Arduino doesn't keep resetting infinitely in case of wrong configuration */
-  wdt_enable(WDTO_2S);  /* Enable the watchdog with a timeout of 2 seconds */
+  // Setup watchdog
+  watchdog.enable(Watchdog::TIMEOUT_1S);    // Watchdog time is 1s, Teensy cannot be set to shorter than than this
   /*===================================================*/
 
   // Do Stuff Blah Blah
+  Serial.println("Startup");
 
 }
 
@@ -80,6 +82,7 @@ void loop() {
   checkForOSCMessage();   // Call this to check for received OSC messages
   /****************************************************/
 
+  watchdog.reset();
 
   // Example code: Sending anything over Serial will cause a reboot
   if (Serial.available()) {
@@ -141,14 +144,13 @@ void haltCallback(OSCMessage &msg, int addrOffset ) {
 }
 
 
+
 void reboot() {
-// Check for Teensy Hardware at compile time
-#if defined(__MK20DX128__) || defined(__MK20DX256__) || defined(__MK64FX512__) || defined(__MK66FX1M0__) || defined(__IMXRT1062__)
-  rebootTeensy();
-#endif
+  while(1) {}   // This will trigger the hardware watchdog and cause a reboot
 }
 
-
+// The above reboot funtion will reboot any hardware including teensy
+// This fuction is just an alternative method to software reboot a teensy
 void rebootTeensy() {
 // Check for Teensy Hardware at compile time
 #if defined(__MK20DX128__) || defined(__MK20DX256__) || defined(__MK64FX512__) || defined(__MK66FX1M0__) || defined(__IMXRT1062__)
