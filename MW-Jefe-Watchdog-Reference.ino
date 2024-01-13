@@ -4,9 +4,19 @@
 
 // Autonet will automatically handle sending heartbeat to Jefe as well as safely sending all OSC messages.
 #include "autonet.h"    // It must be included, https://github.com/MeowWolf/MWArduino
-#include <Watchdog.h>   // Watchdog by Peter Polidoro. Can be found in the Arduino Library Manager or https://github.com/janelia-arduino/Watchdog
 
+#if defined(__MKL26Z64__)
+extern "C" void startup_early_hook(void);
+
+void startup_early_hook(void) {
+  SIM_COPC = 0x0C;   // 1024 ms
+  //SIM_COPC = 0x08; //  256 ms
+  //SIM_COPC = 0x04; //   32 ms
+}
+#else
+#include <Watchdog.h>   // Watchdog by Peter Polidoro. Can be found in the Arduino Library Manager or https://github.com/janelia-arduino/Watchdog
 Watchdog watchdog;
+#endif
 
 // MY network settings
 // ALWAYS EDIT
@@ -56,9 +66,9 @@ void setup() {
 
   /************** Network Setup Code *******************/
   // Non of this should need to be changed
-  Ethernet.begin(my_mac, my_ip, ddns, gateway, subnet);
-  Udp.begin(my_localPort);
-  autonet.setup(Udp);
+  // Ethernet.begin(my_mac, my_ip, ddns, gateway, subnet);
+  // Udp.begin(my_localPort);
+  // autonet.setup(Udp);
   /****************************************************/
 
 
@@ -67,7 +77,9 @@ void setup() {
 
   /*============= Hardware Watchdog code ==============*/
   // Setup watchdog
+#if !defined(__MKL26Z64__)
   watchdog.enable(Watchdog::TIMEOUT_1S);    // Watchdog time is 1s, Teensy cannot be set to shorter than than this
+#endif
   /*===================================================*/
 
   // Do Stuff Blah Blah
@@ -78,11 +90,17 @@ void setup() {
 
 void loop() {
   /************** Network Loop Code *******************/
-  autonet.loop();         // Pat the show manager. If this is not called the hearbeat will not be sent.
-  checkForOSCMessage();   // Call this to check for received OSC messages
+  // autonet.loop();         // Pat the show manager. If this is not called the hearbeat will not be sent.
+  // checkForOSCMessage();   // Call this to check for received OSC messages
   /****************************************************/
 
+#if defined(__MKL26Z64__)
+  //watchdog_reset();
+  SIM_SRVCOP = 0x55;
+  SIM_SRVCOP = 0xAA;
+#else
   watchdog.reset();
+#endif
 
   // Example code: Sending anything over Serial will cause a reboot
   if (Serial.available()) {
