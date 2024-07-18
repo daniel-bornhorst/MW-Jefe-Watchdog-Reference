@@ -15,10 +15,17 @@ void startup_early_hook(void) {
   //SIM_COPC = 0x04; //   32 ms
 }
 
+void watchdog_reset() {
+  SIM_SRVCOP = 0x55;
+  SIM_SRVCOP = 0xAA;
+}
+
 #else                   // Include if any other processor
+
 
 #include <Watchdog.h>   // Watchdog by Peter Polidoro. Can be found in the Arduino Library Manager or https://github.com/janelia-arduino/Watchdog
 Watchdog watchdog;
+
 
 #endif
 
@@ -35,11 +42,10 @@ const unsigned int  my_localPort = 6667;                      // Can be set in J
 IPAddress jefe_ip(10, 32, 16, 10);          // Primary Core
 // IPAddress jefe_ip2(10, 32, 16, 13);      // Redundant Core
 IPAddress jefe_ip2(10, 32, 16, 14);         // Test Core
-const unsigned int jefe_port = 6666;        // Jefe Port
+const unsigned int jefe_port = 6666;        // Jefe Port 
 
 
 // Stuff we need if we're not on 10.32.16.*
-// NEVER EDIT
 byte ddns[] =     {10, 32, 16, 1};
 byte *gateway =   ddns;
 byte subnet[] =   {255, 255, 240, 0};
@@ -99,9 +105,7 @@ void loop() {
   /****************************************************/
 
 #if defined(__MKL26Z64__)                 // Include if Teensy LC
-  //watchdog_reset();
-  SIM_SRVCOP = 0x55;
-  SIM_SRVCOP = 0xAA;
+  watchdog_reset();
 #else                                     // Include if any other processor
   watchdog.reset();
 #endif
@@ -117,12 +121,24 @@ void loop() {
 }
 
 // Example: How to send custom OSC messages
-// outMsg("/doorbell") replace /doorbell with your OSC address string
+// outMsg("/argument") replace /argument with your OSC address string
 // outMsg.add(....) replace .... with OSC variable. This line can be omitted if no variable needed
-void sendOSCMessage(int doorbell){
-  OSCMessage outMsg("/doorbell");
-  outMsg.add(doorbell);
+void sendOSCMessage(int argument){
+  
+  // Using MW Autonet to easily send OSC
+  OSCMessage outMsg("/example");
+  outMsg.add(argument);
   is_connected = autonet.sendOSC(&outMsg, remote_ip, remote_port);
+
+
+
+  //The raw dog method for sending OSC
+  OSCMessage msg("/example");
+  msg.add(argument);
+  Udp.beginPacket(remote_ip, remote_port);
+  msg.send(Udp); // send the bytes to the SLIP stream
+  Udp.endPacket(); // mark the end of the OSC Packet
+  msg.empty(); // free space occupied by message
 }
 
 
@@ -140,8 +156,9 @@ void checkForOSCMessage() {
     if(!msgIn.hasError()) {
       // OSC Command response functions
       // You can add as many callbacks here as you want
-      msgIn.route("/reboot", rebootCallback);
-      msgIn.route("/halt", haltCallback);
+      msgIn.route("/reboot", rebootHandler);
+      msgIn.route("/halt", haltHandler);
+      
     }
     else {
       Serial.println("[OSC ERROR] --- MSG_HAS_ERROR");
@@ -150,7 +167,7 @@ void checkForOSCMessage() {
 }
 
 
-void rebootCallback(OSCMessage &msg, int addrOffset ) {
+void rebootHandler(OSCMessage &msg, int addrOffset ) {
   Serial.println("Reboot command received");
   autonet.echo(&msg);
   reboot();
@@ -158,7 +175,7 @@ void rebootCallback(OSCMessage &msg, int addrOffset ) {
 }
 
 
-void haltCallback(OSCMessage &msg, int addrOffset ) {
+void haltHandler(OSCMessage &msg, int addrOffset ) {
   Serial.println("Halt! command received");
   autonet.echo(&msg);
   reboot();
@@ -175,7 +192,7 @@ void reboot() {
 // This fuction is just an alternative method to software reboot a teensy
 void rebootTeensy() {
 // Check for Teensy Hardware at compile time
-#if defined(__MK20DX128__) || defined(__MK20DX256__) || defined(__MK64FX512__) || defined(__MK66FX1M0__) || defined(__IMXRT1062__)
+#if defined(__MK20DX128__) || defined(__MK20DX256__) || defined(__MK64FX512__) || defined(__MK66FX1M0__) || defined(__IMXRT1062__) || defined(__MKL26Z64__)
   SCB_AIRCR = 0x05FA0004; // this reboot command only works on TEENSY
 #endif
 }
