@@ -31,9 +31,9 @@ Watchdog watchdog;
 
 // MY network settings
 // ALWAYS EDIT
-IPAddress my_ip(10,32,16,33);                                 // Arduino/Teensy IP. Must be unique
+IPAddress my_ip(10,32,16,199);                                 // Arduino/Teensy IP. Must be unique
 byte my_mac[] = {0x56, 0x5A, 0x69, 0x66, 0x66, 0x61};         // Arduino/Teebsy. Must be uniqe. https://miniwebtool.com/mac-address-generator/
-char my_name[50] = "3208422c-44b6-47d1-88ba-a2f2b9b38bbd";    // Unique ID for each device. generate here https://www.uuidgenerator.net/version4
+char my_name[50] = "41476033-010d-493e-aa3a-41cd3fa38443";    // Unique ID for each device. generate here https://www.uuidgenerator.net/version4
 const unsigned int  my_localPort = 6667;                      // Can be set in Jefe Device Qsys plugin. Default is 6667
 
 
